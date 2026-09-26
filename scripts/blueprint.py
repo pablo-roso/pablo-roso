@@ -1,5 +1,8 @@
 """Gemeinsames Werkzeug der Blätter: Schrift als Pfade, Farben, Raster, Zeichen.
 
+Alle Blätter liegen untereinander auf *einem* Papier (`compose`), damit
+Hintergrund und Raster auf dem Profil ohne Lücke durchlaufen.
+
 Text wird mit fontTools in Pfade umgewandelt (Talvesa Mono, OFL, in fonts/),
 damit GitHub keine Schrift laden muss.
 """
@@ -98,12 +101,8 @@ class Sheet:
     def __init__(self, theme, height, label):
         self.t = theme
         self.h = height
-        self.o = [
-            f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{height}" '
-            f'viewBox="0 0 {W} {height}" role="img" aria-label="{label}">',
-            MOTION,
-            f'<rect width="{W}" height="{height}" fill="{theme["bg"]}"/>',
-        ]
+        self.label = label
+        self.o = []
 
     def ink(self, a):
         return f"rgba({self.t['ink']},{a})"
@@ -114,15 +113,6 @@ class Sheet:
     def text(self, s, x, y, size, fill, face=MONO, tracking=0.0, anchor="start", cls="", delay=0.0):
         d = face.path(s, x, y, size, tracking, anchor)
         self.o.append(f'<path fill="{fill}" d="{d}"{anim(cls, delay)}/>')
-
-    def grid(self, cls="f", delay=0.0):
-        h = self.h
-        fine = [f"M{x} 0V{h}" for x in range(0, W + 1, 20)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 20)]
-        major = [f"M{x} 0V{h}" for x in range(0, W + 1, 100)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 100)]
-        self.o.append(f'<g{anim(cls, delay)}>')
-        self.o.append(f'<path d="{" ".join(fine)}" stroke="{self.ink(0.03)}" fill="none"/>')
-        self.o.append(f'<path d="{" ".join(major)}" stroke="{self.ink(0.07)}" fill="none"/>')
-        self.o.append("</g>")
 
     def kicker(self, label, x, y, cls="f", delay=0.0):
         self.o.append(f'<rect x="{x}" y="{y - 10}" width="10" height="10" fill="{self.t["accent"]}"{anim(cls, delay)}/>')
@@ -138,13 +128,33 @@ class Sheet:
         self.text("TALVESA.DE", 1208, y, 12, self.t["solid"], tracking=0.14, anchor="end")
         self.o.append("</g>")
 
-    def svg(self):
-        return "\n".join(self.o + ["</svg>"]) + "\n"
+
+def grid(width, height):
+    """Millimeterpapier über die ganze Höhe: feines und grobes Raster."""
+    fine = [f"M{x} 0V{height}" for x in range(0, width + 1, 20)] + [f"M0 {y}H{width}" for y in range(0, height + 1, 20)]
+    major = [f"M{x} 0V{height}" for x in range(0, width + 1, 100)] + [f"M0 {y}H{width}" for y in range(0, height + 1, 100)]
+    return fine, major
 
 
-def write_both(out, name, draw):
-    """Zeichnet ein Blatt in beiden Themen nach assets/<name>-<thema>.svg."""
-    out = Path(out)
-    out.mkdir(parents=True, exist_ok=True)
-    for theme_name, theme in THEMES.items():
-        (out / f"{name}-{theme_name}.svg").write_text(draw(theme))
+def compose(theme, sheets):
+    """Setzt Blätter untereinander auf ein Papier mit einem Raster."""
+    height = sum(s.h for s in sheets)
+    ink = f"rgba({theme['ink']},{{}})"
+    fine, major = grid(W, height)
+    o = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{height}" viewBox="0 0 {W} {height}" '
+        f'role="img" aria-label="{" ".join(s.label for s in sheets if s.label)}">',
+        MOTION,
+        f'<rect width="{W}" height="{height}" fill="{theme["bg"]}"/>',
+    ]
+    o.append(f'<g{anim("f", 0.0)}>')
+    o.append(f'<path d="{" ".join(fine)}" stroke="{ink.format(0.03)}" fill="none"/>')
+    o.append(f'<path d="{" ".join(major)}" stroke="{ink.format(0.07)}" fill="none"/>')
+    o.append("</g>")
+    y = 0
+    for s in sheets:
+        o.append(f'<g transform="translate(0 {y})">')
+        o += s.o
+        o.append("</g>")
+        y += s.h
+    return "\n".join(o + ["</svg>"]) + "\n"

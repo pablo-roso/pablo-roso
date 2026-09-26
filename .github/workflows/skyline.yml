@@ -1,4 +1,4 @@
-# Zeichnet Blatt 03 (Jahresbilanz) jede Nacht aus dem Beitragskalender neu.
+# Zeichnet das Profil jede Nacht neu; Blatt 03 kommt aus dem Beitragskalender.
 name: Jahresbilanz
 
 on:
@@ -25,8 +25,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install fonttools brotli
-      - name: Blatt 03 zeichnen
-        run: python scripts/render-skyline.py
+      - name: Profil zeichnen
+        run: python scripts/render.py
         env:
           # Ein eigener Token (read:user) nur, falls der eingebaute nicht reicht.
           GITHUB_TOKEN: ${{ secrets.SKYLINE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -34,5 +34,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/skyline-*.svg
+          git add assets/profile-*.svg
           git diff --cached --quiet || { git commit -m "chore: Jahresbilanz neu gezeichnet"; git push; }
