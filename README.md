@@ -6,40 +6,15 @@
 
 <br>
 
-**Zwei Entwickler. Ein Studio. Keine Ausreden.**
-Mit [@CremerFreddy](https://github.com/CremerFreddy) baue ich
-[**Talvesa**](https://github.com/Talvesa-eGbR): Websites, Web-Apps, mobile Apps
-und APIs für Unternehmen in ganz Deutschland. Von Freiburg aus, ohne
-Agentur-Overhead und ohne Ticketsystem dazwischen.
-
-<br>
-
-### Was bei uns anders ist
-
-| Üblich | Bei uns |
-| :-- | :-- |
-| „Barrierearm“ steht im Angebot. | axe-core prüft **WCAG 2.2 AA** im CI, im hellen *und* im dunklen Theme, ohne Ausnahmeliste. |
-| Google Fonts, CDN, Tracking-Pixel. | **0 Anfragen an Dritte.** Schriften, Skripte und Styles liegen auf dem eigenen Server. |
-| Ein Lighthouse-Score, der mit der Tagesform schwankt. | **Feste Budgets** für Anfragen und Bytes. Wer sie sprengt, macht den Build rot. |
-| Security-Header in einer Config, die niemand prüft. | **Tests lesen die echte Antwort** des Servers, nicht die Einstellung. |
-| Dieselbe Zahl an drei Stellen, und irgendwann sind es drei Zahlen. | **Jeder Wert steht genau einmal.** Alles andere liest ihn ab. |
-| „Wir melden uns.“ | **Direkter Draht** zu denen, die den Code schreiben. |
-
-<br>
-
-### Werkzeugkasten
-
-`Python` · `Django` · `DRF` · `React` · `Vite` · `Sass` · `PostgreSQL` · `Docker` · `pytest` · `Playwright` · `Claude Code`
-
-<br>
-
-> **Nichts wird zweimal getippt.**
-> Keine Schutzmaßnahme existiert, bevor ein Test ihre Wirkung prüft.
-
-<br>
-
 <p align="center">
-  <a href="https://talvesa.de">talvesa.de</a>
-  &nbsp;·&nbsp;
-  <a href="https://github.com/Talvesa-eGbR">@Talvesa-eGbR</a>
+  Websites, Web-Apps und Apps — von der ersten Skizze bis live.<br>
+  Gebaut in Freiburg, bei <a href="https://talvesa.de"><b>Talvesa</b></a>.
 </p>
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/parts-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/parts-light.svg">
+  <img alt="Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar." src="./assets/parts-light.svg" width="100%">
+</picture>
