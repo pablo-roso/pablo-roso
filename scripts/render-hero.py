@@ -1,4 +1,4 @@
-"""Zeichnet das Hero-Bild des Profils (assets/hero-light.svg, assets/hero-dark.svg).
+"""Zeichnet Hero-Bild und Stückliste des Profils (assets/hero-*.svg, assets/parts-*.svg).
 
 Eine technische Zeichnung statt eines Fotos: links die Aussage, rechts ein
 Drahtmodell aus Browser und Telefon, bemaßt und beschriftet mit dem, was
@@ -177,8 +177,74 @@ def hero(t):
     return "\n".join(o) + "\n"
 
 
+# Blatt 02: die Stückliste. (Position, Benennung, Aufgabe, Menge)
+PARTS = [
+    ("01", "Python", "Rückgrat", "1"),
+    ("02", "Django", "Server & API", "1"),
+    ("03", "React", "Oberflächen, die was tun", "1"),
+    ("04", "PostgreSQL", "Gedächtnis", "1"),
+    ("05", "Docker", "Transport", "1"),
+    ("06", "Vite + Sass", "Schliff", "1"),
+    ("07", "Liebe zum Detail", "alles andere", "nicht verhandelbar"),
+]
+
+
+def parts(t):
+    ink = lambda a: f"rgba({t['ink']},{a})"  # noqa: E731
+    row_h, head = 40, 112
+    h = head + row_h * (len(PARTS) + 1) + 70
+    o = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{h}" viewBox="0 0 {W} {h}" role="img" '
+        'aria-label="Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar.">',
+        f'<rect width="{W}" height="{h}" fill="{t["bg"]}"/>',
+    ]
+
+    def text(s, x, y, size, fill, face=MONO, tracking=0.0, anchor="start"):
+        o.append(f'<path fill="{fill}" d="{face.path(s, x, y, size, tracking, anchor)}"/>')
+
+    fine = [f"M{x} 0V{h}" for x in range(0, W + 1, 20)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 20)]
+    major = [f"M{x} 0V{h}" for x in range(0, W + 1, 100)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 100)]
+    o.append(f'<path d="{" ".join(fine)}" stroke="{ink(0.03)}" fill="none"/>')
+    o.append(f'<path d="{" ".join(major)}" stroke="{ink(0.07)}" fill="none"/>')
+
+    o.append(f'<rect x="72" y="50" width="10" height="10" fill="{t["accent"]}"/>')
+    text("BLATT 02", 94, 60, 13, t["soft"], tracking=0.22)
+    text("Stückliste", 72, 96, 34, t["solid"], face=BOLD, tracking=-0.01)
+
+    left, right = 72, 1208
+    cols = [left, 170, 520, 1000]  # POS, BENENNUNG, AUFGABE, MENGE
+    top = head + 10
+    o.append(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h * (len(PARTS) + 1)}" fill="{t["bg"]}" stroke="{ink(0.45)}"/>')
+    o.append(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h}" fill="{ink(0.05)}"/>')
+    for x in cols[1:]:
+        o.append(f'<path d="M{x} {top}V{top + row_h * (len(PARTS) + 1)}" stroke="{ink(0.2)}"/>')
+    for i in range(1, len(PARTS) + 1):
+        o.append(f'<path d="M{left} {top + row_h * i}H{right}" stroke="{ink(0.2 if i == 1 else 0.1)}"/>')
+    for x, label in zip(cols, ("POS", "BENENNUNG", "AUFGABE", "MENGE")):
+        text(label, x + 20, top + 25, 11, t["soft"], tracking=0.22)
+    for i, (pos, name, job, qty) in enumerate(PARTS, start=1):
+        y = top + row_h * i + 26
+        last = i == len(PARTS)
+        text(pos, cols[0] + 20, y, 15, t["accent"] if last else t["soft"], tracking=0.06)
+        text(name, cols[1] + 20, y, 17, t["solid"], face=BOLD if last else MONO)
+        text(job, cols[2] + 20, y, 15, t["soft"])
+        text(qty, cols[3] + 20, y, 15, t["accent"] if last else t["solid"], face=BOLD if last else MONO)
+
+    fy = top + row_h * (len(PARTS) + 1) + 40
+    text("GEPRÜFT: JA · FREIGEGEBEN: IMMER ERST NACH DEM TEST", 72, fy, 11, t["soft"], tracking=0.18)
+    s = 14 / EMBLEM_H
+    lw = MONO.width("TALVESA.DE", 12, 0.14)
+    ex = 1208 - lw - 12 - EMBLEM_W * s
+    o.append(f'<path fill="{t["solid"]}" transform="translate({ex:.2f} {fy - 12}) scale({s:.5f})" d="{EMBLEM}"/>')
+    text("TALVESA.DE", 1208, fy, 12, t["solid"], tracking=0.14, anchor="end")
+    o.append("</svg>")
+    return "\n".join(o) + "\n"
+
+
 os.makedirs(OUT, exist_ok=True)
 for name, theme in THEMES.items():
     with open(f"{OUT}/hero-{name}.svg", "w") as fh:
         fh.write(hero(theme))
+    with open(f"{OUT}/parts-{name}.svg", "w") as fh:
+        fh.write(parts(theme))
 print("ok")
