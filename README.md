@@ -1,18 +1,15 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./assets/banner-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="./assets/banner-light.svg">
-  <img alt="pablo-roso — baut Talvesa, Websites und Apps aus Freiburg." src="./assets/banner-light.svg" width="100%">
+  <img alt="Baut Talvesa — Websites und Apps aus Freiburg." src="./assets/banner-light.svg" width="100%">
 </picture>
-
-### Hi, hier ist pablo-roso.
 
 Ich baue Websites, Web-Apps und Werkzeuge — und zusammen mit
 [@CremerFreddy](https://github.com/CremerFreddy) das Softwarestudio
 **[Talvesa](https://github.com/Talvesa-eGbR)** in Freiburg im Breisgau.
 
 ```python
-class PabloRoso:
-    handle   = "pablo-roso"
+class Me:
     base     = "Freiburg im Breisgau"
     studio   = "Talvesa"                       # talvesa.de
     stack    = ["Python", "Django", "React", "PostgreSQL", "Docker"]

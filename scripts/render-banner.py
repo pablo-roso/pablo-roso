@@ -73,10 +73,10 @@ THEMES = {
 
 # Das Terminal: (Befehl?, Text). Befehle werden getippt, Ausgaben erscheinen.
 LINES = [
-    (True, "whoami"),
-    (False, "pablo-roso · Freiburg im Breisgau"),
     (True, "cat studio.txt"),
     (False, "Talvesa · Websites & Apps aus Freiburg"),
+    (True, "cat stack.txt"),
+    (False, "Python · Django · React · PostgreSQL"),
     (True, "ship --with-care"),
 ]
 TYPE = 0.075  # Sekunden pro Zeichen
@@ -86,7 +86,7 @@ PAUSE = 0.45
 def banner(t):
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" '
-        'aria-label="pablo-roso — baut Talvesa, Websites und Apps aus Freiburg.">',
+        'aria-label="Baut Talvesa — Websites und Apps aus Freiburg.">',
         f'<rect width="{W}" height="{H}" fill="{t["bg"]}"/>',
     ]
     grid = [f"M{x} 0V{H}" for x in range(0, W + 1, 60)] + [f"M0 {y}H{W}" for y in range(0, H + 1, 60)]
@@ -110,7 +110,7 @@ def banner(t):
     out.append(f'<path d="M{x0} {y0 + 40}H{x1}" stroke="{t["edge"]}"/>')
     for i in range(3):
         out.append(f'<circle cx="{x0 + 24 + i * 20}" cy="{y0 + 20}" r="6" fill="{t["dot"]}"/>')
-    title = "pablo-roso — zsh"
+    title = "zsh"
     _, e = MONO.text(title, 0, 0, 13, 0.04)
     d, _ = MONO.text(title, (x0 + x1 - e[-1]) / 2, y0 + 25, 13, 0.04)
     out.append(f'<path fill="{t["soft"]}" d="{d}"/>')
