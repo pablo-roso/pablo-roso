@@ -1,25 +1,18 @@
-"""Zeichnet Blatt 01 (Hero) und Blatt 02 (Stückliste) nach assets/.
+"""Blatt 01 (Hero), das Band darunter und Blatt 02 (Stückliste).
 
 Blatt 01 ist eine technische Zeichnung, die sich einmal selbst zeichnet:
 Raster, dann Browser und Telefon wie von einem Plotter, dann Maße und
 Beschriftungen, zuletzt die Aussage. Danach steht das Bild still.
-
-    pip install fonttools brotli
-    python scripts/render-hero.py
 """
 
-import sys
+from blueprint import BOLD, MONO, Sheet, anim
 
-from blueprint import BOLD, MONO, Sheet, anim, write_both
-
-OUT = sys.argv[1] if len(sys.argv) > 1 else "assets"
 W_HALF = 640
 
 
 def hero(t):
     sh = Sheet(t, 560, "Gebaut, nicht behauptet. Websites, Web-Apps, mobile Apps und APIs aus Freiburg im Breisgau.")
     ink = sh.ink
-    sh.grid(delay=0.0)
     sh.kicker("SOFTWARESTUDIO · FREIBURG IM BREISGAU", 72, 92, delay=0.2)
     sh.text("Websites · Web-Apps · Mobile Apps · APIs", 72, 446, 16, t["soft"], tracking=0.02, cls="f", delay=0.4)
 
@@ -106,7 +99,7 @@ def hero(t):
     sh.text("47.9990° N · 7.8421° E", 72, fy + 34, 12, t["soft"], tracking=0.14, cls="f", delay=0.6)
     sh.text("BLATT 01 · MASSSTAB 1:1", W_HALF, fy + 34, 12, t["soft"], tracking=0.14, anchor="middle", cls="f", delay=0.7)
     sh.signature(fy + 34, delay=0.8)
-    return sh.svg()
+    return sh
 
 
 # Blatt 02: die Stückliste. (Position, Benennung, Aufgabe, Menge)
@@ -125,10 +118,9 @@ def parts(t):
     row_h, head = 40, 112
     top = head + 10
     rows = len(PARTS) + 1
-    h = top + row_h * rows + 70
+    h = top + row_h * rows + 78
     sh = Sheet(t, h, "Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar.")
     ink = sh.ink
-    sh.grid()
     sh.kicker("BLATT 02", 72, 60, delay=0.1)
     sh.text("Stückliste", 72, 96, 34, t["solid"], face=BOLD, tracking=-0.01, cls="r", delay=0.2)
 
@@ -155,10 +147,15 @@ def parts(t):
     fy = top + row_h * rows + 40
     sh.text("GEPRÜFT: JA · FREIGEGEBEN: IMMER ERST NACH DEM TEST", 72, fy, 11, t["soft"], tracking=0.18)
     sh.signature(fy)
-    return sh.svg()
+    return sh
 
 
-if __name__ == "__main__":
-    write_both(OUT, "hero", hero)
-    write_both(OUT, "parts", parts)
-    print("ok")
+
+def band(t):
+    """Die Zeile zwischen Blatt 01 und 02: was wir machen, wo."""
+    sh = Sheet(t, 140, "Websites, Web-Apps und Apps, von der ersten Skizze bis live. Gebaut in Freiburg, bei Talvesa.")
+    sh.add(f'<path d="M72 40H1208M72 {140 - 20}H1208" stroke="{sh.ink(0.12)}" stroke-dasharray="4 6"/>')
+    sh.text("Websites, Web-Apps und Apps — von der ersten Skizze bis live.", W_HALF, 78, 19, t["solid"],
+            anchor="middle", cls="f", delay=4.3)
+    sh.text("Gebaut in Freiburg, bei Talvesa.", W_HALF, 104, 15, t["soft"], anchor="middle", cls="f", delay=4.4)
+    return sh

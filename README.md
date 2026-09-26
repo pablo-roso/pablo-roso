@@ -1,28 +1,7 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/hero-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/hero-light.svg">
-  <img alt="Gebaut, nicht behauptet. Websites, Web-Apps, mobile Apps und APIs aus Freiburg im Breisgau." src="./assets/hero-light.svg" width="100%">
-</picture>
-
-<br>
-
-<p align="center">
-  Websites, Web-Apps und Apps — von der ersten Skizze bis live.<br>
-  Gebaut in Freiburg, bei <a href="https://talvesa.de"><b>Talvesa</b></a>.
-</p>
-
-<br>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/parts-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/parts-light.svg">
-  <img alt="Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar." src="./assets/parts-light.svg" width="100%">
-</picture>
-
-<br>
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/skyline-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/skyline-light.svg">
-  <img alt="Jahresbilanz: die Beiträge der letzten zwölf Monate als isometrische Stadt, jede Nacht neu gezeichnet." src="./assets/skyline-light.svg" width="100%">
-</picture>
+<a href="https://talvesa.de">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/profile-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/profile-light.svg">
+    <img alt="Gebaut, nicht behauptet. Websites, Web-Apps und Apps aus Freiburg, gebaut bei Talvesa. Mit Stückliste und Jahresbilanz der Beiträge." src="./assets/profile-light.svg" width="100%">
+  </picture>
+</a>
