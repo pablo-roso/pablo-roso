@@ -18,3 +18,11 @@
   <source media="(prefers-color-scheme: light)" srcset="./assets/parts-light.svg">
   <img alt="Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar." src="./assets/parts-light.svg" width="100%">
 </picture>
+
+<br>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/skyline-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="./assets/skyline-light.svg">
+  <img alt="Jahresbilanz: die Beiträge der letzten zwölf Monate als isometrische Stadt, jede Nacht neu gezeichnet." src="./assets/skyline-light.svg" width="100%">
+</picture>

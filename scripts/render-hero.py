@@ -1,180 +1,112 @@
-"""Zeichnet Hero-Bild und Stückliste des Profils (assets/hero-*.svg, assets/parts-*.svg).
+"""Zeichnet Blatt 01 (Hero) und Blatt 02 (Stückliste) nach assets/.
 
-Eine technische Zeichnung statt eines Fotos: links die Aussage, rechts ein
-Drahtmodell aus Browser und Telefon, bemaßt und beschriftet mit dem, was
-bei uns gemessen wird statt versprochen. Statisch, ohne Animation.
-Text wird mit fontTools in Pfade umgewandelt, damit GitHub keine Schrift
-laden muss.
+Blatt 01 ist eine technische Zeichnung, die sich einmal selbst zeichnet:
+Raster, dann Browser und Telefon wie von einem Plotter, dann Maße und
+Beschriftungen, zuletzt die Aussage. Danach steht das Bild still.
 
     pip install fonttools brotli
-    TALVESA_FONTS=<Ordner mit talvesa-mono-regular.woff2> python scripts/render-hero.py
+    python scripts/render-hero.py
 """
 
-import os
 import sys
 
-from fontTools.pens.svgPathPen import SVGPathPen
-from fontTools.pens.transformPen import TransformPen
-from fontTools.ttLib import TTFont
+from blueprint import BOLD, MONO, Sheet, anim, write_both
 
-FONTS = os.environ["TALVESA_FONTS"].rstrip("/")
 OUT = sys.argv[1] if len(sys.argv) > 1 else "assets"
-
-EMBLEM = (
-    "M39.154 23.238 15.259 23.238 0 0 106.715 0 91.455 23.238 67.15 23.238 "
-    "105.453 81.569 91.455 102.887ZM119.451 60.337 105.453 39.02 131.076 0 159.072 0Z"
-)
-EMBLEM_W, EMBLEM_H = 159.072, 102.887
-
-
-class Face:
-    def __init__(self, path):
-        font = TTFont(path)
-        self.gs = font.getGlyphSet()
-        self.cmap = font.getBestCmap()
-        self.upm = font["head"].unitsPerEm
-
-    def path(self, s, x, y, size, tracking=0.0, anchor="start"):
-        """Pfad für `s` mit Grundlinie y; anchor start|end|middle."""
-        width = self.width(s, size, tracking)
-        if anchor == "end":
-            x -= width
-        elif anchor == "middle":
-            x -= width / 2
-        scale = size / self.upm
-        pen = SVGPathPen(self.gs)
-        cx = x
-        for ch in s:
-            name = self.cmap.get(ord(ch))
-            if name is None:
-                raise SystemExit(f"Glyphe fehlt: {ch!r}")
-            g = self.gs[name]
-            if ch != " ":
-                g.draw(TransformPen(pen, (scale, 0, 0, -scale, cx, y)))
-            cx += g.width * scale + tracking * size
-        return pen.getCommands()
-
-    def width(self, s, size, tracking=0.0):
-        scale = size / self.upm
-        w = sum(self.gs[self.cmap[ord(ch)]].width * scale + tracking * size for ch in s)
-        return w - tracking * size
-
-
-MONO = Face(f"{FONTS}/talvesa-mono-regular.woff2")
-BOLD = Face(f"{FONTS}/talvesa-mono-bold.woff2")
-
-W, H = 1280, 560
-THEMES = {
-    "light": dict(bg="#F5F5F5", ink="11,11,11", solid="#0B0B0B", soft="#5C5C5C", accent="#873FA6"),
-    "dark": dict(bg="#0B0B0B", ink="245,245,245", solid="#F5F5F5", soft="#A3A3A3", accent="#BE7ADB"),
-}
+W_HALF = 640
 
 
 def hero(t):
-    ink = lambda a: f"rgba({t['ink']},{a})"  # noqa: E731
-    o = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" role="img" '
-        'aria-label="Gebaut, nicht behauptet. Websites, Web-Apps, mobile Apps und APIs aus Freiburg im Breisgau.">',
-        f'<rect width="{W}" height="{H}" fill="{t["bg"]}"/>',
-    ]
+    sh = Sheet(t, 560, "Gebaut, nicht behauptet. Websites, Web-Apps, mobile Apps und APIs aus Freiburg im Breisgau.")
+    ink = sh.ink
+    sh.grid(delay=0.0)
+    sh.kicker("SOFTWARESTUDIO · FREIBURG IM BREISGAU", 72, 92, delay=0.2)
+    sh.text("Websites · Web-Apps · Mobile Apps · APIs", 72, 446, 16, t["soft"], tracking=0.02, cls="f", delay=0.4)
 
-    def text(s, x, y, size, fill, face=MONO, tracking=0.0, anchor="start"):
-        o.append(f'<path fill="{fill}" d="{face.path(s, x, y, size, tracking, anchor)}"/>')
+    line, faint, bg = ink(0.55), ink(0.22), t["bg"]
 
-    # Millimeterpapier: feines und grobes Raster.
-    fine = [f"M{x} 0V{H}" for x in range(0, W + 1, 20)] + [f"M0 {y}H{W}" for y in range(0, H + 1, 20)]
-    major = [f"M{x} 0V{H}" for x in range(0, W + 1, 100)] + [f"M0 {y}H{W}" for y in range(0, H + 1, 100)]
-    o.append(f'<path d="{" ".join(fine)}" stroke="{ink(0.03)}" fill="none"/>')
-    o.append(f'<path d="{" ".join(major)}" stroke="{ink(0.07)}" fill="none"/>')
+    def stroke(el, delay, width=1):
+        # Ein gezeichnetes Element: Kontur, die der Plotter abfährt.
+        sh.add(el.replace("/>", f' fill="none" stroke-width="{width}"{anim("d", delay)}/>', 1))
 
-    # Links: die Aussage.
-    o.append(f'<rect x="72" y="82" width="10" height="10" fill="{t["accent"]}"/>')
-    text("SOFTWARESTUDIO · FREIBURG IM BREISGAU", 94, 92, 13, t["soft"], tracking=0.22)
-    for i, line in enumerate(["Gebaut,", "nicht", "behauptet"]):
-        text(line, 66, 206 + i * 94, 88, t["solid"], face=BOLD, tracking=-0.02)
-    x_end = 66 + BOLD.width("behauptet", 88, -0.02)
-    o.append(f'<rect x="{x_end + 6:.1f}" y="{394 - 17}" width="15" height="15" fill="{t["accent"]}"/>')
-    text("Websites · Web-Apps · Mobile Apps · APIs", 72, 446, 16, t["soft"], tracking=0.02)
+    def bar(x, y, w, h, alpha, delay):
+        sh.add(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{ink(alpha)}"{anim("g", delay)}/>')
 
-    # Rechts: das Drahtmodell.
-    line = ink(0.55)
-    faint = ink(0.22)
+    # Browser.
     bx, by, bw, bh = 770, 120, 400, 272
-    o.append(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="8" fill="{t["bg"]}" stroke="{line}" stroke-width="1.5"/>')
-    o.append(f'<path d="M{bx} {by + 26}H{bx + bw}" stroke="{line}"/>')
+    sh.add(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="8" fill="{bg}"{anim("f", 0.3)}/>')
+    stroke(f'<rect x="{bx}" y="{by}" width="{bw}" height="{bh}" rx="8" stroke="{line}"/>', 0.3, 1.5)
+    stroke(f'<path d="M{bx} {by + 26}H{bx + bw}" stroke="{line}"/>', 0.8)
     for i in range(3):
-        o.append(f'<circle cx="{bx + 16 + i * 14}" cy="{by + 13}" r="4" fill="none" stroke="{line}"/>')
-    o.append(f'<rect x="{bx + 70}" y="{by + 7}" width="200" height="12" rx="6" fill="none" stroke="{faint}"/>')
-    # Inhalt der Seite.
-    o.append(f'<rect x="{bx + 20}" y="{by + 50}" width="190" height="16" fill="{ink(0.7)}"/>')
+        stroke(f'<circle cx="{bx + 16 + i * 14}" cy="{by + 13}" r="4" stroke="{line}"/>', 0.9 + i * 0.08)
+    stroke(f'<rect x="{bx + 70}" y="{by + 7}" width="200" height="12" rx="6" stroke="{faint}"/>', 1.0)
+    bar(bx + 20, by + 50, 190, 16, 0.7, 1.1)
     for i, w in enumerate((210, 180, 196)):
-        o.append(f'<rect x="{bx + 20}" y="{by + 80 + i * 12}" width="{w}" height="5" fill="{ink(0.22)}"/>')
-    o.append(f'<rect x="{bx + 20}" y="{by + 128}" width="92" height="24" rx="3" fill="none" stroke="{t["accent"]}" stroke-width="1.5"/>')
+        bar(bx + 20, by + 80 + i * 12, w, 5, 0.22, 1.2 + i * 0.07)
+    stroke(f'<rect x="{bx + 20}" y="{by + 128}" width="92" height="24" rx="3" stroke="{t["accent"]}"/>', 1.4, 1.5)
     ix, iy, iw, ih = bx + 250, by + 46, 130, 106
-    o.append(f'<rect x="{ix}" y="{iy}" width="{iw}" height="{ih}" fill="none" stroke="{faint}"/>')
-    o.append(f'<path d="M{ix} {iy}L{ix + iw} {iy + ih}M{ix + iw} {iy}L{ix} {iy + ih}" stroke="{faint}"/>')
+    stroke(f'<rect x="{ix}" y="{iy}" width="{iw}" height="{ih}" stroke="{faint}"/>', 1.2)
+    stroke(f'<path d="M{ix} {iy}L{ix + iw} {iy + ih}" stroke="{faint}"/>', 1.5)
+    stroke(f'<path d="M{ix + iw} {iy}L{ix} {iy + ih}" stroke="{faint}"/>', 1.6)
     for i in range(3):
-        o.append(f'<rect x="{bx + 20 + i * 124}" y="{by + 172}" width="112" height="82" fill="none" stroke="{faint}"/>')
-        o.append(f'<rect x="{bx + 30 + i * 124}" y="{by + 184}" width="60" height="5" fill="{ink(0.3)}"/>')
-        o.append(f'<rect x="{bx + 30 + i * 124}" y="{by + 196}" width="84" height="4" fill="{ink(0.15)}"/>')
+        stroke(f'<rect x="{bx + 20 + i * 124}" y="{by + 172}" width="112" height="82" stroke="{faint}"/>', 1.5 + i * 0.1)
+        bar(bx + 30 + i * 124, by + 184, 60, 5, 0.3, 1.8 + i * 0.1)
+        bar(bx + 30 + i * 124, by + 196, 84, 4, 0.15, 1.85 + i * 0.1)
 
-    # Das Telefon davor.
+    # Telefon davor.
     px, py, pw, ph = 1098, 262, 112, 208
-    o.append(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="16" fill="{t["bg"]}" stroke="{line}" stroke-width="1.5"/>')
-    o.append(f'<rect x="{px + 38}" y="{py + 8}" width="36" height="8" rx="4" fill="none" stroke="{faint}"/>')
-    o.append(f'<rect x="{px + 12}" y="{py + 30}" width="70" height="10" fill="{ink(0.7)}"/>')
+    sh.add(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="16" fill="{bg}"{anim("f", 1.9)}/>')
+    stroke(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="16" stroke="{line}"/>', 1.9, 1.5)
+    stroke(f'<rect x="{px + 38}" y="{py + 8}" width="36" height="8" rx="4" stroke="{faint}"/>', 2.3)
+    bar(px + 12, py + 30, 70, 10, 0.7, 2.3)
     for i, w in enumerate((88, 76, 84)):
-        o.append(f'<rect x="{px + 12}" y="{py + 50 + i * 9}" width="{w}" height="4" fill="{ink(0.22)}"/>')
-    o.append(f'<rect x="{px + 12}" y="{py + 86}" width="88" height="44" fill="none" stroke="{faint}"/>')
-    o.append(f'<rect x="{px + 12}" y="{py + 164}" width="88" height="26" rx="3" fill="none" stroke="{t["accent"]}" stroke-width="1.5"/>')
+        bar(px + 12, py + 50 + i * 9, w, 4, 0.22, 2.4 + i * 0.06)
+    stroke(f'<rect x="{px + 12}" y="{py + 86}" width="88" height="44" stroke="{faint}"/>', 2.4)
+    stroke(f'<rect x="{px + 12}" y="{py + 164}" width="88" height="26" rx="3" stroke="{t["accent"]}"/>', 2.5, 1.5)
 
-    # Bemaßung über dem Browser.
+    # Maße.
     dy = 96
-    o.append(f'<path d="M{bx} {dy}H{bx + bw}M{bx} {dy - 6}V{dy + 6}M{bx + bw} {dy - 6}V{dy + 6}" stroke="{ink(0.4)}"/>')
+    stroke(f'<path d="M{bx} {dy}H{bx + bw}" stroke="{ink(0.4)}"/>', 2.4)
+    stroke(f'<path d="M{bx} {dy - 6}V{dy + 6}M{bx + bw} {dy - 6}V{dy + 6}" stroke="{ink(0.4)}"/>', 2.4)
     label = "1280 px"
     lw = MONO.width(label, 11, 0.08) + 16
-    o.append(f'<rect x="{bx + bw / 2 - lw / 2:.1f}" y="{dy - 8}" width="{lw:.1f}" height="16" fill="{t["bg"]}"/>')
-    text(label, bx + bw / 2, dy + 4, 11, t["soft"], tracking=0.08, anchor="middle")
-    # Bemaßung rechts am Telefon.
+    sh.add(f'<rect x="{bx + bw / 2 - lw / 2:.1f}" y="{dy - 8}" width="{lw:.1f}" height="16" fill="{bg}"{anim("f", 2.8)}/>')
+    sh.text(label, bx + bw / 2, dy + 4, 11, t["soft"], tracking=0.08, anchor="middle", cls="f", delay=2.8)
     dx = 1232
-    o.append(f'<path d="M{dx} {py}V{py + ph}M{dx - 6} {py}H{dx + 6}M{dx - 6} {py + ph}H{dx + 6}" stroke="{ink(0.4)}"/>')
-    o.append(f'<rect x="{dx - 9}" y="{py + ph / 2 - 26}" width="18" height="52" fill="{t["bg"]}"/>')
-    o.append(f'<path fill="{t["soft"]}" transform="rotate(-90 {dx + 4} {py + ph / 2})" '
-             f'd="{MONO.path("390 px", dx + 4, py + ph / 2, 11, 0.08, "middle")}"/>')
+    stroke(f'<path d="M{dx} {py}V{py + ph}M{dx - 6} {py}H{dx + 6}M{dx - 6} {py + ph}H{dx + 6}" stroke="{ink(0.4)}"/>', 2.6)
+    sh.add(f'<g{anim("f", 3.0)}><rect x="{dx - 9}" y="{py + ph / 2 - 26}" width="18" height="52" fill="{bg}"/>'
+           f'<path fill="{t["soft"]}" transform="rotate(-90 {dx + 4} {py + ph / 2})" '
+           f'd="{MONO.path("390 px", dx + 4, py + ph / 2, 11, 0.08, "middle")}"/></g>')
 
     # Beschriftungen: Führungslinie, Punkt am Ziel, Text.
-    def callout(label, lx, ly, tx, ty, anchor="end"):
-        start = lx + 8 if anchor == "end" else lx - 8
-        mid = (tx - 18) if anchor == "end" else tx
-        o.append(f'<path d="M{start} {ly - 4}H{mid}L{tx} {ty}" fill="none" stroke="{ink(0.4)}"/>')
-        o.append(f'<circle cx="{tx}" cy="{ty}" r="7" fill="none" stroke="{t["accent"]}" stroke-opacity="0.45"/>')
-        o.append(f'<circle cx="{tx}" cy="{ty}" r="3" fill="{t["accent"]}"/>')
-        text(label, lx, ly, 12, t["solid"], tracking=0.04, anchor=anchor)
+    def callout(label, lx, ly, tx, ty, delay):
+        stroke(f'<path d="M{lx + 8} {ly - 4}H{tx - 18}L{tx} {ty}" stroke="{ink(0.4)}"/>', delay)
+        sh.add(f'<circle cx="{tx}" cy="{ty}" r="7" fill="none" stroke="{t["accent"]}" stroke-opacity="0.45"{anim("p", delay + 0.5)}/>')
+        sh.add(f'<circle cx="{tx}" cy="{ty}" r="3" fill="{t["accent"]}"{anim("p", delay + 0.45)}/>')
+        sh.text(label, lx, ly, 12, t["solid"], tracking=0.04, anchor="end", cls="f", delay=delay + 0.2)
 
-    callout("CSP: script-src 'self'", 738, 142, bx + 70, by + 13)
-    callout("WCAG 2.2 AA · axe-core", 738, 214, bx + 20, by + 88)
-    callout("0 Anfragen an Dritte", 738, 318, bx + 20, by + 213)
+    callout("CSP: script-src 'self'", 738, 142, bx + 70, by + 13, 2.7)
+    callout("WCAG 2.2 AA · axe-core", 738, 214, bx + 20, by + 88, 2.85)
+    callout("0 Anfragen an Dritte", 738, 318, bx + 20, by + 213, 3.0)
+    sh.text("44 px Tap-Ziele", px - 20, py + 180, 12, t["solid"], tracking=0.04, anchor="end", cls="f", delay=3.2)
+    stroke(f'<path d="M{px - 14} {py + 176}H{px + 12}" stroke="{ink(0.4)}"/>', 3.1)
+    sh.add(f'<circle cx="{px + 12}" cy="{py + 176}" r="3" fill="{t["accent"]}"{anim("p", 3.5)}/>')
+    sh.text("Hosting: Deutschland", bx, by + bh + 38, 12, t["solid"], tracking=0.04, cls="f", delay=3.3)
+    sh.text("Budgets statt Scores", bx, by + bh + 58, 12, t["soft"], tracking=0.04, cls="f", delay=3.4)
 
-    # Unter dem Browser: zwei Angaben ohne Ziel am Rand.
-    text("44 px Tap-Ziele", px - 20, py + 180, 12, t["solid"], tracking=0.04, anchor="end")
-    o.append(f'<path d="M{px - 14} {py + 176}H{px + 12}" stroke="{ink(0.4)}"/>')
-    o.append(f'<circle cx="{px + 12}" cy="{py + 176}" r="3" fill="{t["accent"]}"/>')
-    text("Hosting: Deutschland", bx, by + bh + 38, 12, t["solid"], tracking=0.04)
-    text("Budgets statt Scores", bx, by + bh + 58, 12, t["soft"], tracking=0.04)
+    # Zuletzt: die Aussage.
+    for i, word in enumerate(["Gebaut,", "nicht", "behauptet"]):
+        sh.text(word, 66, 206 + i * 94, 88, t["solid"], face=BOLD, tracking=-0.02, cls="s", delay=3.5 + i * 0.16)
+    x_end = 66 + BOLD.width("behauptet", 88, -0.02)
+    sh.add(f'<rect x="{x_end + 6:.1f}" y="377" width="15" height="15" fill="{t["accent"]}"{anim("p", 4.1)}/>')
 
-    # Schriftfeld unten, wie auf einer Zeichnung.
+    # Schriftfeld.
     fy = 496
-    o.append(f'<path d="M72 {fy}H1208" stroke="{ink(0.25)}"/>')
-    text("47.9990° N · 7.8421° E", 72, fy + 34, 12, t["soft"], tracking=0.14)
-    text("BLATT 01 · MASSSTAB 1:1", W / 2, fy + 34, 12, t["soft"], tracking=0.14, anchor="middle")
-    s = 14 / EMBLEM_H
-    lw = MONO.width("TALVESA.DE", 12, 0.14)
-    ex = 1208 - lw - 12 - EMBLEM_W * s
-    o.append(f'<path fill="{t["solid"]}" transform="translate({ex:.2f} {fy + 22}) scale({s:.5f})" d="{EMBLEM}"/>')
-    text("TALVESA.DE", 1208, fy + 34, 12, t["solid"], tracking=0.14, anchor="end")
-
-    o.append("</svg>")
-    return "\n".join(o) + "\n"
+    stroke(f'<path d="M72 {fy}H1208" stroke="{ink(0.25)}"/>', 0.2)
+    sh.text("47.9990° N · 7.8421° E", 72, fy + 34, 12, t["soft"], tracking=0.14, cls="f", delay=0.6)
+    sh.text("BLATT 01 · MASSSTAB 1:1", W_HALF, fy + 34, 12, t["soft"], tracking=0.14, anchor="middle", cls="f", delay=0.7)
+    sh.signature(fy + 34, delay=0.8)
+    return sh.svg()
 
 
 # Blatt 02: die Stückliste. (Position, Benennung, Aufgabe, Menge)
@@ -190,61 +122,43 @@ PARTS = [
 
 
 def parts(t):
-    ink = lambda a: f"rgba({t['ink']},{a})"  # noqa: E731
     row_h, head = 40, 112
-    h = head + row_h * (len(PARTS) + 1) + 70
-    o = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{h}" viewBox="0 0 {W} {h}" role="img" '
-        'aria-label="Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar.">',
-        f'<rect width="{W}" height="{h}" fill="{t["bg"]}"/>',
-    ]
-
-    def text(s, x, y, size, fill, face=MONO, tracking=0.0, anchor="start"):
-        o.append(f'<path fill="{fill}" d="{face.path(s, x, y, size, tracking, anchor)}"/>')
-
-    fine = [f"M{x} 0V{h}" for x in range(0, W + 1, 20)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 20)]
-    major = [f"M{x} 0V{h}" for x in range(0, W + 1, 100)] + [f"M0 {y}H{W}" for y in range(0, h + 1, 100)]
-    o.append(f'<path d="{" ".join(fine)}" stroke="{ink(0.03)}" fill="none"/>')
-    o.append(f'<path d="{" ".join(major)}" stroke="{ink(0.07)}" fill="none"/>')
-
-    o.append(f'<rect x="72" y="50" width="10" height="10" fill="{t["accent"]}"/>')
-    text("BLATT 02", 94, 60, 13, t["soft"], tracking=0.22)
-    text("Stückliste", 72, 96, 34, t["solid"], face=BOLD, tracking=-0.01)
+    top = head + 10
+    rows = len(PARTS) + 1
+    h = top + row_h * rows + 70
+    sh = Sheet(t, h, "Stückliste: Python, Django, React, PostgreSQL, Docker, Vite und Sass – und Liebe zum Detail, nicht verhandelbar.")
+    ink = sh.ink
+    sh.grid()
+    sh.kicker("BLATT 02", 72, 60, delay=0.1)
+    sh.text("Stückliste", 72, 96, 34, t["solid"], face=BOLD, tracking=-0.01, cls="r", delay=0.2)
 
     left, right = 72, 1208
-    cols = [left, 170, 520, 1000]  # POS, BENENNUNG, AUFGABE, MENGE
-    top = head + 10
-    o.append(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h * (len(PARTS) + 1)}" fill="{t["bg"]}" stroke="{ink(0.45)}"/>')
-    o.append(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h}" fill="{ink(0.05)}"/>')
+    cols = [left, 170, 520, 1000]
+    sh.add(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h * rows}" fill="{t["bg"]}" stroke="{ink(0.45)}"/>')
+    sh.add(f'<rect x="{left}" y="{top}" width="{right - left}" height="{row_h}" fill="{ink(0.05)}"/>')
     for x in cols[1:]:
-        o.append(f'<path d="M{x} {top}V{top + row_h * (len(PARTS) + 1)}" stroke="{ink(0.2)}"/>')
+        sh.add(f'<path d="M{x} {top}V{top + row_h * rows}" stroke="{ink(0.2)}"/>')
     for i in range(1, len(PARTS) + 1):
-        o.append(f'<path d="M{left} {top + row_h * i}H{right}" stroke="{ink(0.2 if i == 1 else 0.1)}"/>')
+        sh.add(f'<path d="M{left} {top + row_h * i}H{right}" stroke="{ink(0.2 if i == 1 else 0.1)}"/>')
     for x, label in zip(cols, ("POS", "BENENNUNG", "AUFGABE", "MENGE")):
-        text(label, x + 20, top + 25, 11, t["soft"], tracking=0.22)
+        sh.text(label, x + 20, top + 25, 11, t["soft"], tracking=0.22)
     for i, (pos, name, job, qty) in enumerate(PARTS, start=1):
         y = top + row_h * i + 26
         last = i == len(PARTS)
-        text(pos, cols[0] + 20, y, 15, t["accent"] if last else t["soft"], tracking=0.06)
-        text(name, cols[1] + 20, y, 17, t["solid"], face=BOLD if last else MONO)
-        text(job, cols[2] + 20, y, 15, t["soft"])
-        text(qty, cols[3] + 20, y, 15, t["accent"] if last else t["solid"], face=BOLD if last else MONO)
+        sh.add(f'<g{anim("r", 0.3 + i * 0.09)}>')
+        sh.text(pos, cols[0] + 20, y, 15, t["accent"] if last else t["soft"], tracking=0.06)
+        sh.text(name, cols[1] + 20, y, 17, t["solid"], face=BOLD if last else MONO)
+        sh.text(job, cols[2] + 20, y, 15, t["soft"])
+        sh.text(qty, cols[3] + 20, y, 15, t["accent"] if last else t["solid"], face=BOLD if last else MONO)
+        sh.add("</g>")
 
-    fy = top + row_h * (len(PARTS) + 1) + 40
-    text("GEPRÜFT: JA · FREIGEGEBEN: IMMER ERST NACH DEM TEST", 72, fy, 11, t["soft"], tracking=0.18)
-    s = 14 / EMBLEM_H
-    lw = MONO.width("TALVESA.DE", 12, 0.14)
-    ex = 1208 - lw - 12 - EMBLEM_W * s
-    o.append(f'<path fill="{t["solid"]}" transform="translate({ex:.2f} {fy - 12}) scale({s:.5f})" d="{EMBLEM}"/>')
-    text("TALVESA.DE", 1208, fy, 12, t["solid"], tracking=0.14, anchor="end")
-    o.append("</svg>")
-    return "\n".join(o) + "\n"
+    fy = top + row_h * rows + 40
+    sh.text("GEPRÜFT: JA · FREIGEGEBEN: IMMER ERST NACH DEM TEST", 72, fy, 11, t["soft"], tracking=0.18)
+    sh.signature(fy)
+    return sh.svg()
 
 
-os.makedirs(OUT, exist_ok=True)
-for name, theme in THEMES.items():
-    with open(f"{OUT}/hero-{name}.svg", "w") as fh:
-        fh.write(hero(theme))
-    with open(f"{OUT}/parts-{name}.svg", "w") as fh:
-        fh.write(parts(theme))
-print("ok")
+if __name__ == "__main__":
+    write_both(OUT, "hero", hero)
+    write_both(OUT, "parts", parts)
+    print("ok")
