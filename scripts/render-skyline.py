@@ -84,8 +84,9 @@ def demo():
     return weeks
 
 
-def stats(weeks):
-    days = [d for w in weeks for d in w]
+def stats(weeks, since=None):
+    """Kennzahlen über alle Tage ab `since` (ohne: über alle)."""
+    days = [d for w in weeks for d in w if since is None or d[0] >= since]
     total = sum(c for _, c, _ in days)
     record = max(days, key=lambda x: x[1])
     streak = best = 0
@@ -109,13 +110,26 @@ def blend(fg, bg, a):
     return "#" + "".join(f"{round(x * a + y * (1 - a)):02X}" for x, y in zip(f, b))
 
 
+# Ein junges Konto hat kein ganzes Jahr: dann beginnt das Blatt beim ersten
+# Beitrag (mindestens MIN_WEEKS Wochen breit), und die Blöcke werden größer,
+# statt dass elf leere Monate die Arbeit an den Rand drängen.
+MIN_WEEKS = 8
+CITY_X, CITY_W = 440, 740
+
+
 def skyline(weeks, today):
-    st = stats(weeks)
+    since = min(d for w in weeks for d, c, _ in w if c)
+    first_w = next(i for i, w in enumerate(weeks) if any(d >= since for d, _, _ in w))
+    start = max(0, min(first_w, len(weeks) - MIN_WEEKS))
+    trimmed = start > 0
+    weeks = weeks[start:]
+    st = stats(weeks, since if trimmed else None)
     peak = max(st["record"][1], 1)
+    span = f"seit {since:%d.%m.%Y}" if trimmed else "in 12 Monaten"
 
     def draw(t):
         h = 640
-        sh = Sheet(t, h, f"Jahresbilanz: {num(st['total'])} Beiträge in zwölf Monaten, Rekord {st['record'][1]} an einem Tag, "
+        sh = Sheet(t, h, f"Jahresbilanz: {num(st['total'])} Beiträge {span}, Rekord {st['record'][1]} an einem Tag, "
                          f"längste Serie {st['streak']} Tage.")
         ink = sh.ink
         sh.grid()
@@ -125,7 +139,7 @@ def skyline(weeks, today):
 
         # Kennzahlen links.
         rows = [
-            (num(st["total"]), "Beiträge in 12 Monaten"),
+            (num(st["total"]), f"Beiträge {span}"),
             (str(st["record"][1]), f"Rekord am {st['record'][0]:%d.%m.%Y}"),
             (str(st["streak"]), "Tage längste Serie"),
             (f"{round(100 * st['active'] / st['days'])} %", "der Tage mit Beiträgen"),
@@ -140,8 +154,11 @@ def skyline(weeks, today):
         sh.add(f'<path d="M380 160V560" stroke="{ink(0.18)}"/>')
 
         # Die Stadt.
-        ux, uy, vx, vy = 12.4, 3.0, 7.2, -4.6
-        ox, oy = 440, 378
+        n = len(weeks)
+        k = min(3.0, CITY_W / (n * 12.4 + 7 * 7.2))
+        ux, uy, vx, vy = 12.4 * k, 3.0 * k, 7.2 * k, -4.6 * k
+        ox = CITY_X + (CITY_W - (n * ux + 7 * vx)) / 2
+        oy = 515 - n * uy
         gap = 0.82
         faces = {
             "light": dict(top="#FFFFFF", front="#D2D2D2", right="#A6A6A6", edge="rgba(11,11,11,0.4)"),
@@ -172,8 +189,7 @@ def skyline(weeks, today):
                 continue
             hh = 5 + 175 * math.sqrt(count / peak)
             is_rec = d == st["record"][0]
-            is_today = d == today
-            c = acc if is_rec or is_today else faces
+            c = acc if is_rec else faces
             up = lambda p: (p[0], p[1] - hh)  # noqa: E731
             sh.add(f'<g stroke="{c["edge"]}" stroke-width="0.6" stroke-linejoin="round"{anim("r", 0.3 + w * 0.03)}>')
             sh.add(f'<polygon points="{pt(*p0)} {pt(*p1)} {pt(*up(p1))} {pt(*up(p0))}" fill="{c["front"]}"/>')
@@ -184,9 +200,13 @@ def skyline(weeks, today):
                 tx, ty = up(p0)[0] + aU[0] / 2 + aV[0] / 2, up(p0)[1] + aU[1] / 2 + aV[1] / 2
                 ly = min(ty - 40, 190)
                 delay = 0.5 + w * 0.03
-                sh.add(f'<path d="M{tx:.1f} {ty - 4:.1f}V{ly}H{tx + 24:.1f}" fill="none" stroke="{t["accent"]}"{anim("d", delay)}/>')
+                label = f"REKORD · {count}"
+                # Am rechten Rand zeigt die Beschriftung nach links.
+                side = -1 if tx + 30 + BOLD.width(label, 12, 0.1) > 1208 else 1
+                sh.add(f'<path d="M{tx:.1f} {ty - 4:.1f}V{ly}H{tx + 24 * side:.1f}" fill="none" stroke="{t["accent"]}"{anim("d", delay)}/>')
                 sh.add(f'<circle cx="{tx:.1f}" cy="{ty - 4:.1f}" r="3" fill="{t["accent"]}"{anim("p", delay)}/>')
-                sh.text(f"REKORD · {count}", tx + 30, ly + 4, 12, t["solid"], face=BOLD, tracking=0.1, cls="f", delay=delay + 0.4)
+                sh.text(label, tx + 30 * side, ly + 4, 12, t["solid"], face=BOLD, tracking=0.1,
+                        anchor="start" if side > 0 else "end", cls="f", delay=delay + 0.4)
 
         # Monatsmarken an der Vorderkante.
         seen = set()
@@ -194,7 +214,7 @@ def skyline(weeks, today):
             first = week[0][0]
             if first.day <= 7 and first.month not in seen:
                 seen.add(first.month)
-                mx = ox + w * ux - 4
+                mx = ox + w * ux - 4 * k
                 my = oy + w * uy + 20
                 sh.text(f"{first:%m}", mx, my, 10, t["soft"], tracking=0.1, cls="f", delay=0.3)
 
@@ -214,4 +234,4 @@ if __name__ == "__main__":
     if sum(c for w in weeks for _, c, _ in w) == 0:
         raise SystemExit("Keine Beiträge sichtbar – SKYLINE_TOKEN (read:user) als Secret hinterlegen.")
     write_both(OUT, "skyline", skyline(weeks, date.today()))
-    print("ok", stats(weeks)["total"])
+    print("ok")
