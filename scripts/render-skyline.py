@@ -209,5 +209,9 @@ def skyline(weeks, today):
 
 if __name__ == "__main__":
     weeks = demo() if "--demo" in sys.argv else fetch()
+    # Ein leeres Jahr heißt fast immer: der Token sieht die Beiträge nicht.
+    # Dann bleibt das alte Blatt stehen, statt eine Null zu veröffentlichen.
+    if sum(c for w in weeks for _, c, _ in w) == 0:
+        raise SystemExit("Keine Beiträge sichtbar – SKYLINE_TOKEN (read:user) als Secret hinterlegen.")
     write_both(OUT, "skyline", skyline(weeks, date.today()))
     print("ok", stats(weeks)["total"])
